@@ -61,7 +61,7 @@ function convertEnumToSwift(node: ts.EnumDeclaration): string {
 
     return `    case ${name.toLowerCase()} = ${value}`;
   });
-  return `enum ${enumName}: String {\n${members.join("\n")}\n}`;
+  return `enum ${enumName}: String, Codable, Sendable {\n${members.join("\n")}\n}`;
 }
 
 function convertInterfaceToSwift(
@@ -89,7 +89,7 @@ function convertInterfaceToSwift(
       return "";
     })
     .filter((prop) => prop !== "");
-  return `struct ${structName} {\n${properties.join("\n")}\n}`;
+  return `struct ${structName}: Codable, Sendable {\n${properties.join("\n")}\n}`;
 }
 
 function convertTypeScriptToSwift(
