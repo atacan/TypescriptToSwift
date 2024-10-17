@@ -52,7 +52,13 @@ function convertEnumToSwift(node: ts.EnumDeclaration): string {
   const enumName = node.name.text;
   const members = node.members.map((member) => {
     const name = member.name.getText();
-    const value = member.initializer ? member.initializer.getText() : "";
+    let value = member.initializer ? member.initializer.getText() : "";
+
+    // Replace single quotes with double quotes
+    if (value.startsWith("'") && value.endsWith("'")) {
+      value = `"${value.slice(1, -1)}"`;
+    }
+
     return `    case ${name.toLowerCase()} = ${value}`;
   });
   return `enum ${enumName}: String {\n${members.join("\n")}\n}`;
