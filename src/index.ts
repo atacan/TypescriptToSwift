@@ -1,6 +1,7 @@
 import * as ts from "typescript";
 import * as fs from "fs";
 import { Command } from "commander";
+import * as path from "path";
 
 function convertTypeToSwift(
   type: ts.Type,
@@ -116,15 +117,53 @@ function convertTypeScriptFileToSwift(inputPath: string, outputPath: string) {
   }
 }
 
+function processTypeScriptFiles(inputDir: string, outputDir: string) {
+  function processFile(filePath: string) {
+    const relativePath = path.relative(inputDir, filePath);
+    const outputPath = path.join(
+      outputDir,
+      relativePath.replace(".ts", ".swift"),
+    );
+
+    const program = ts.createProgram([filePath], {});
+    const sourceFile = program.getSourceFile(filePath);
+    const typeChecker = program.getTypeChecker();
+
+    if (sourceFile) {
+      const swiftCode = convertTypeScriptToSwift(sourceFile, typeChecker);
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+      fs.writeFileSync(outputPath, swiftCode);
+      console.log(`Converted ${filePath} to ${outputPath}`);
+    } else {
+      console.error(`Could not find source file: ${filePath}`);
+    }
+  }
+
+  function traverseDirectory(dir: string) {
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+      const filePath = path.join(dir, file);
+      const stat = fs.statSync(filePath);
+      if (stat.isDirectory()) {
+        traverseDirectory(filePath);
+      } else if (path.extname(file) === ".ts") {
+        processFile(filePath);
+      }
+    }
+  }
+
+  traverseDirectory(inputDir);
+}
+
 const program = new Command();
 
 program
   .version("1.0.0")
   .description("Convert TypeScript types to Swift")
-  .requiredOption("-i, --input <path>", "Input TypeScript file path")
-  .requiredOption("-o, --output <path>", "Output Swift file path")
+  .requiredOption("-i, --input <path>", "Input TypeScript folder path")
+  .requiredOption("-o, --output <path>", "Output Swift folder path")
   .action((options) => {
-    convertTypeScriptFileToSwift(options.input, options.output);
+    processTypeScriptFiles(options.input, options.output);
   });
 
 program.parse(process.argv);
