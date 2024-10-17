@@ -8,3 +8,13 @@ struct LanguageConfidence {
     var confidence: Double
 }
 
+enum TranslationModel: String {
+    case standard = "standard"
+    case premium = "premium"
+}
+
+struct TranslationLanguageOptions {
+    var language: String
+    var model: TranslationModel?
+}
+

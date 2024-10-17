@@ -37,11 +37,11 @@ function convertTypeToSwift(
     }
   } else if (type.flags & ts.TypeFlags.Union) {
     const unionType = type as ts.UnionType;
-    if (unionType.types.some((t) => t.flags & ts.TypeFlags.Undefined)) {
-      const nonUndefinedTypes = unionType.types.filter(
-        (t) => !(t.flags & ts.TypeFlags.Undefined),
-      );
-      return `${convertTypeToSwift(nonUndefinedTypes[0], typeChecker)}?`;
+    const types = unionType.types.filter(
+      (t) => !(t.flags & ts.TypeFlags.Undefined),
+    );
+    if (types.length === 1) {
+      return `${convertTypeToSwift(types[0], typeChecker)}?`;
     }
   }
   return typeChecker.typeToString(type);
@@ -66,13 +66,18 @@ function convertInterfaceToSwift(
     .map((member) => {
       if (ts.isPropertySignature(member)) {
         const name = member.name.getText();
-        const type = member.type
-          ? convertTypeToSwift(
-              typeChecker.getTypeAtLocation(member.type),
-              typeChecker,
-            )
-          : "Any";
-        return `    var ${name}: ${type}`;
+        const isOptional = member.questionToken !== undefined;
+        let type = member.type
+          ? typeChecker.getTypeAtLocation(member.type)
+          : typeChecker.getAnyType();
+
+        let swiftType = convertTypeToSwift(type, typeChecker);
+
+        if (isOptional && !swiftType.endsWith("?")) {
+          swiftType += "?";
+        }
+
+        return `    var ${name}: ${swiftType}`;
       }
       return "";
     })
