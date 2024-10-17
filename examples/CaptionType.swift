@@ -1,6 +1,6 @@
 struct LanguageIdResult {
     var top_language: String
-    var language_confidences: LanguageConfidence[]
+    var language_confidences: [LanguageConfidence]
 }
 
 struct LanguageConfidence {

@@ -21,6 +21,18 @@ function convertTypeToSwift(
   } else if (type.flags & ts.TypeFlags.Object) {
     const objType = type as ts.ObjectType;
     if (objType.objectFlags & ts.ObjectFlags.Reference) {
+      const typeReference = type as ts.TypeReference;
+      if (
+        typeReference.target &&
+        typeReference.target.symbol &&
+        typeReference.target.symbol.name === "Array"
+      ) {
+        const typeArgs = typeChecker.getTypeArguments(typeReference);
+        if (typeArgs && typeArgs.length > 0) {
+          const elementType = convertTypeToSwift(typeArgs[0], typeChecker);
+          return `[${elementType}]`;
+        }
+      }
       return typeChecker.typeToString(type);
     }
   } else if (type.flags & ts.TypeFlags.Union) {
@@ -32,7 +44,7 @@ function convertTypeToSwift(
       return `${convertTypeToSwift(nonUndefinedTypes[0], typeChecker)}?`;
     }
   }
-  return "Any";
+  return typeChecker.typeToString(type);
 }
 
 function convertEnumToSwift(node: ts.EnumDeclaration): string {
