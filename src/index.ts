@@ -48,6 +48,14 @@ function convertTypeToSwift(
   return typeChecker.typeToString(type);
 }
 
+function isExported(node: ts.Node): boolean {
+  return (
+    (ts.getCombinedModifierFlags(node as ts.Declaration) &
+      ts.ModifierFlags.Export) !==
+    0
+  );
+}
+
 function convertEnumToSwift(node: ts.EnumDeclaration): string {
   const enumName = node.name.text;
   const members = node.members.map((member) => {
@@ -61,7 +69,8 @@ function convertEnumToSwift(node: ts.EnumDeclaration): string {
 
     return `    case ${name.toLowerCase()} = ${value}`;
   });
-  return `enum ${enumName}: String, Codable, Sendable {\n${members.join("\n")}\n}`;
+  const visibility = isExported(node) ? "public " : "";
+  return `${visibility}enum ${enumName}: String, Codable, Sendable {\n${members.join("\n")}\n}`;
 }
 
 function convertInterfaceToSwift(
@@ -69,6 +78,7 @@ function convertInterfaceToSwift(
   typeChecker: ts.TypeChecker,
 ): string {
   const structName = node.name.text;
+  const visibility = isExported(node) ? "public " : "";
   const properties = node.members
     .map((member) => {
       if (ts.isPropertySignature(member)) {
@@ -84,12 +94,13 @@ function convertInterfaceToSwift(
           swiftType += "?";
         }
 
-        return `    var ${name}: ${swiftType}`;
+        return `    ${visibility}var ${name}: ${swiftType}`;
       }
       return "";
     })
     .filter((prop) => prop !== "");
-  return `struct ${structName}: Codable, Sendable {\n${properties.join("\n")}\n}`;
+
+  return `${visibility}struct ${structName}: Codable, Sendable {\n${properties.join("\n")}\n}`;
 }
 
 function convertTypeScriptToSwift(
